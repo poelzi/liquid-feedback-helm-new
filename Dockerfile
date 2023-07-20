@@ -2,14 +2,14 @@
 # Dockerfile for liquid-feedback
 #
 
-FROM debian:buster
+FROM debian:bookworm
 
 MAINTAINER Pedro Ângelo <pangelo@void.io>
 
-ENV LF_CORE_VERSION 3.2.1
-ENV LF_FRONTEND_VERSION 3.2.1
-ENV LF_WEBMCP_VERSION 2.1.0
-ENV LF_MOONBRIDGE_VERSION 1.0.1
+ENV LF_CORE_VERSION 4.2.2
+ENV LF_FRONTEND_VERSION 4.0.0
+ENV LF_WEBMCP_VERSION 2.2.1
+ENV LF_MOONBRIDGE_VERSION 1.1.3
 
 #
 # install dependencies
@@ -19,16 +19,18 @@ RUN apt-get update && apt-get -y install \
         build-essential \
         exim4 \
         imagemagick \
-        liblua5.2-dev \
+        lsb-release \
+        liblua5.3-dev \
         libpq-dev \
-        lua5.2 \
-        liblua5.2-0 \
+        lua5.3 \
+        liblua5.3-0 \
         postgresql \
-        postgresql-server-dev-11 \
+        postgresql-server-dev-15 \
         pmake \
         libbsd-dev \
         curl \
-        discount
+        discount \
+        sassc
 
 #
 # prepare file tree
@@ -81,8 +83,14 @@ RUN make \
 
 WORKDIR /opt/lf/
 
+COPY patches/* /opt/lf/sources/patches
+
+RUN ls -la /opt/lf/sources/patches
+
 RUN cd /opt/lf/sources/liquid_feedback_frontend-v${LF_FRONTEND_VERSION} \
     && cp -R . /opt/lf/frontend \
+    && cd /opt/lf/frontend \
+    && cat /opt/lf/sources/patches/*.diff | patch -p1 \
     && cd /opt/lf/frontend/fastpath \
     && make \
     && chown www-data /opt/lf/frontend/tmp
@@ -111,7 +119,7 @@ RUN rm -rf /opt/lf/sources \
         build-essential \
         liblua5.2-dev \
         libpq-dev \
-        postgresql-server-dev-11 \
+        postgresql-server-dev-15 \
     && apt-get -y autoremove \
     && apt-get clean
 

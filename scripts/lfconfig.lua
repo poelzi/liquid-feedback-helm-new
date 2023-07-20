@@ -2,6 +2,8 @@
 -- MANDATORY (MUST BE CAREFULLY CHECKED AND PROPERLY SET!)
 -- ========================================================================
 
+config.absolute_base_url = "http://localhost:8080"
+
 -- Name of this instance, defaults to name of config file
 -- ------------------------------------------------------------------------
 config.instance_name = "Liquid Feedback Docker Instance"
@@ -33,7 +35,7 @@ config.use_terms_checkboxes = {
   }
 }
 --]]
-  
+
 -- Absolute base url of application
 -- ------------------------------------------------------------------------
 config.absolute_base_url = "http://example.com/"
@@ -83,15 +85,15 @@ config.formatting_engines = {
 -- Public access level
 -- ------------------------------------------------------------------------
 -- Available options:
--- "none" 
+-- "none"
 --     -> Closed user group, no public access at all
 --        (except login/registration/password reset)
 -- "anonymous"
 --     -> Shows only initiative/suggestions texts and aggregated
 --        supporter/voter counts
--- "authors_pseudonymous" 
+-- "authors_pseudonymous"
 --     -> Like anonymous, but shows screen names of authors
--- "all_pseudonymous" 
+-- "all_pseudonymous"
 --     -> Show everything a member can see, except profile pages
 -- "everything"
 --     -> Show everything a member can see, including profile pages
@@ -161,9 +163,9 @@ config.public_access = "none"
 -- ------------------------------------------------------------------------
 -- config.notification_digest_template = [[
 -- Hello #{name},
--- 
+--
 -- this is your personal digest.
--- 
+--
 -- #{digest}
 -- ]]
 
@@ -263,7 +265,7 @@ config.free_timing = {
     }
   end,
   available_func = function(policy)
-    return { 
+    return {
       { name = "End of 2013", id = '2013-12-31' },
       { name = "End of 2014", id = '2014-12-31' },
       { name = "End of 2015", id = '2015-12-31' }
@@ -279,7 +281,7 @@ config.free_timing = {
 -- Example configuration for controlling a Git repository
 --[[
 config.lf4rcs.git = {
-  
+
   render_draft_reference = function(url, draft)
     if not draft.external_reference then return end
     ui.tag{ content = _"Changeset:" }
@@ -289,11 +291,11 @@ config.lf4rcs.git = {
       external = url .. ";a=commit;h=" .. draft.external_reference
     }
   end,
-  
+
   get_remote_user = function()
     return os.getenv("REMOTE_USER")
   end,
-  
+
   get_branches = function(path, exec)
     local branches = {}
     for line in io.lines() do
@@ -305,7 +307,7 @@ config.lf4rcs.git = {
     end
     return branches
   end,
-  
+
   commit = function(path, exec, branch, target_node_id, close_message, merge_message)
     if merge_message then
       exec("git", "-C", path, "checkout", "-f", "master")
@@ -330,11 +332,11 @@ config.lf4rcs.hg = {
       external = url .. "/graph/" .. draft.external_reference
     }
   end,
-  
+
   get_remote_user = function()
     return os.getenv("REMOTE_USER")
   end,
-  
+
   get_branches = function(path, exec)
     local first_node_id = os.getenv("HG_NODE")
     if not first_node_id then
@@ -378,7 +380,7 @@ config.lf4rcs.hg = {
       exec("hg", "commit", "-R", path, "-m", merge_message)
     end
   end
-  
+
 }
 
 -- Grace period after creating an initiative for pushing changes during verification phase
@@ -418,7 +420,7 @@ config.admin_logger = function(params)
   local adminid = app.session.member_id
   local adminname = app.session.member.name
   local url = params._webmcp_path
-  
+
   -- do something (e.g. calling 'logger' via extos.pfilter)
 
 end
@@ -491,5 +493,5 @@ config.port = 8080
 -- ------------------------------------------------------------------------
 -- uncomment the following line to enable debug trace
 -- ------------------------------------------------------------------------
--- config.enable_debug_trace = true
+config.enable_debug_trace = true
 
