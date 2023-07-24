@@ -106,8 +106,8 @@ RUN addgroup --system lf \
     && adduser --system --ingroup lf --no-create-home --disabled-password lf \
     && service postgresql start \
     && (su -l postgres -c "psql -f /opt/lf/sources/scripts/setup_db.sql") \
-    && (su -l postgres -c "PGPASSWORD=liquid psql -U liquid_feedback -h 127.0.0.1 -f /opt/lf/sources/liquid_feedback_core-v${LF_CORE_VERSION}/core.sql liquid_feedback") \
-    && (su -l postgres -c "PGPASSWORD=liquid psql -U liquid_feedback -h 127.0.0.1 -f /opt/lf/sources/scripts/config_db.sql liquid_feedback") \
+    && (su -l postgres -c "PGPASSWORD=liquid psql -U liquid_feedback -h 127.0.0.1 -v ON_ERROR_STOP=1 -f /opt/lf/sources/liquid_feedback_core-v${LF_CORE_VERSION}/core.sql liquid_feedback") \
+    && (su -l postgres -c "PGPASSWORD=liquid psql -U liquid_feedback -h 127.0.0.1 -v ON_ERROR_STOP=1 -f /opt/lf/sources/scripts/config_db.sql liquid_feedback") \
     && service postgresql stop
 
 #
