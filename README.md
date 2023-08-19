@@ -4,14 +4,26 @@
 
 This helm chart provides a full automatic installation/upgrade and scaleable version of liquid feedback.
 
-Features:
+***Features:***
 
- [x] [Zalandao Postegres Operator](https://github.com/zalando/postgres-operator) support
- [x] auto sql upgrade
- [x] admin user managment
- [x] horizontal scaleable
- [x] LDAP support (WIP)
- [ ] OAUTH2 support
+  * [x] [Zalandao Postegres Operator](https://github.com/zalando/postgres-operator) support
+  * [x] auto sql upgrade
+  * [x] admin user managment
+  * [x] horizontal scaleable
+  * [x] LDAP support (WIP)
+  * [ ] OAUTH2 support
+
+## Usage
+
+Add the helm registry to your installation
+
+`helm repo add liquid-feedback https://b1-systems.github.io/liquid-feedback-helm/`
+
+Then use:
+
+`helm install lf liquid-feedback/liquid-feedback`
+
+Please note that the default settings use the Zalandao Postegres Operator.
 
 
 ## Creating admin users
