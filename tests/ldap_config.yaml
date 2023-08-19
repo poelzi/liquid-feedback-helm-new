@@ -1,0 +1,10 @@
+replicaCount: 1
+replication:
+  enabled: false
+users: test1,test2
+userPasswords: test,test
+group: users
+phpldapadmin:
+  enabled: false
+ltb-passwd:
+  enabled: false

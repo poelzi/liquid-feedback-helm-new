@@ -1,0 +1,36 @@
+{{ if .Values.pgoperator.enabled }}
+# copyright: B1 Systems GmbH <info@b1-systems.de>, 2023
+# license: GPLv3+, http://www.gnu.org/licenses/gpl-3.0.html
+# author: Daniel Poelzleithner <poelzleithner@b1-systems.de>, 2023
+
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+ name: {{ include "liquid-feedback.fullname" . }}-db
+spec:
+  numberOfInstances: {{ .Values.pgoperator.instances | default "1" }}
+  patroni:
+    synchronous_mode: true
+  postgresql:
+    version: "{{ .Values.pgoperator.version | default 15 | toString }}"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  teamId:  {{ .Values.pgoperator.teamId }}
+  users:
+    {{ .Values.postgresql.username | default "liquid_feedback" }}: ["LOGIN"]
+  databases:
+    {{ .Values.postgresql.database | default "liquid_feedback" }}: "{{ .Values.postgresql.username | default "liquid-feedback" }}"
+  volume:
+    size: {{ .Values.pgoperator.size }}
+    {{ if .Values.pgoperator.storageClass }}
+    storageClass: {{.Values.pgoperator.storageClass }}
+    {{ end }}
+  resources:
+    {{- toYaml .Values.resources | nindent 4 }}
+
+{{ end }}

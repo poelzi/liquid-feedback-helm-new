@@ -1,0 +1,102 @@
+# copyright: B1 Systems GmbH <info@b1-systems.de>, 2023
+# license: GPLv3+, http://www.gnu.org/licenses/gpl-3.0.html
+# author: Daniel Poelzleithner <poelzleithner@b1-systems.de>, 2023
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "liquid-feedback.fullname" . }}
+  labels:
+    {{- include "liquid-feedback.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "liquid-feedback.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "liquid-feedback.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: wait
+        image: busybox:1.28
+        command: ["sleep", "2"]
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "liquid-feedback.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["start_frontend"]
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 8080
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 8080
+          volumeMounts:
+            - name: config
+              mountPath: "/opt/lf/frontend/config"
+              readOnly: true
+            - name: password
+              mountPath: "/etc/lf-password"
+              readOnly: true
+            - name: password-ldap
+              mountPath: "/etc/lf-password-ldap"
+              readOnly: true
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "liquid-feedback.fullname" . }}
+          # An array of keys from the ConfigMap to create as files
+          items:
+          - key: "frontend.lua"
+            path: "lfconfig.lua"
+      - name: password-ldap
+        secret:
+          secretName: {{ include "liquid-feedback.fullname" . }}-ldap
+          optional: true
+      - name: password
+        secret:
+        {{ if .Values.pgoperator.enabled }}
+          secretName: "{{ .Values.postgresql.username}}.{{ include "liquid-feedback.fullname" . }}-db.credentials.postgresql.acid.zalan.do"
+        {{ else }}
+          secretName: "{{ .Values.postgresql.secretName}}"
+        {{ end }}

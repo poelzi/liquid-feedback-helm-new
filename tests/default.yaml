@@ -1,0 +1,28 @@
+ldap:
+  enabled: true
+  password: "Not@SecurePassw0rd"
+
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+
+
+adminUsers:
+  - name: admin
+    password: "test"
+  - name: admin2
+    password: "test2"
+
+frontend:
+  debug: true
+  fork:
+    pre: 3
+    min: 3
+    max: 10
+    delay: 0.100
+    errorDelay: 3
+    exitDelay: 5
+    idleTimeout: 10000
+    minRequests: 40
+    maxRequests: 60

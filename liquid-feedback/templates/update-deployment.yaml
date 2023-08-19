@@ -1,0 +1,92 @@
+# copyright: B1 Systems GmbH <info@b1-systems.de>, 2023
+# license: GPLv3+, http://www.gnu.org/licenses/gpl-3.0.html
+# author: Daniel Poelzleithner <poelzleithner@b1-systems.de>, 2023
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "liquid-feedback.fullname" . }}-update
+  labels:
+    {{- include "liquid-feedback.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "liquid-feedback.selectorUpdateLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/users.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "liquid-feedback.selectorUpdateLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "liquid-feedback.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-update
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["start_update"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          # volumeMounts:
+          #   # name must match the volume name below
+          #   - name: secret-volume
+          #     mountPath: /etc/secret-volume
+          #     readOnly: true
+          env:
+            - name: DBUSER
+              value: {{ .Values.postgresql.username }}
+            - name: DBNAME
+              value: {{ .Values.postgresql.database }}
+            {{- if .Values.pgoperator.enabled }}
+            - name: DBHOST
+              value: {{ include "liquid-feedback.fullname" . }}-db
+            - name: DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.postgresql.username}}.{{ include "liquid-feedback.fullname" . }}-db.credentials.postgresql.acid.zalan.do"
+                  key: password
+            {{- else }}
+            - name: DBHOST
+              value: {{ .Values.postgresql.hostname }}
+            - name: DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.postgresql.secretName}}"
+                  key: "{{ .Values.postgresql.secretKey}}"
+            {{- end }}
+          volumeMounts:
+            - name: users
+              mountPath: "/etc/lf-users"
+              readOnly: true
+      volumes:
+        - name: users
+          secret:
+            secretName: "{{ include "liquid-feedback.fullname" . }}-users"
+            optional: true
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

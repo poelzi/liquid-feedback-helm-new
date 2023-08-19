@@ -1,0 +1,68 @@
+# liquid feedback frontend settings
+# 
+frontend:
+  name: "Unnamed LiquidFeedback"
+  # will be set to ingress address if ingress is enabled
+  # absoluteBaseUrl: "http://localhost:8080"
+  # none|anonymous|authors_pseudonymous|all_pseudonymous|everything
+  # enable debug tracing
+  debug: true
+  publicAccess: "none"
+  useTerms: "<h1>Terms of Use</h1><p>Have fun</p>"
+  # these are discount -f flags
+  markdownAllow: "links,fencedcode"
+  markdownRemoveImages: true
+  enabledLanguages:
+    - "en"
+    - "de"
+    - "es"
+  defaultLanguage: "en"
+  disableRegistrations: false
+  # motdPublic: "<h1>Message of the day (public)</h1>"
+  # motdIntern: "<h1>Message of the day (public)</h1>"
+  # etherpad:
+      # base_url = "http://example.com:9001/",
+      # api_base = "http://localhost:9001/",
+      # api_key = "mysecretapikey",
+      # group_id = "mygroupname",
+      # cookie_path = "/"
+  # listen to ipv6 connections
+  ipv6: false
+  # fork:
+  #   min: 3
+  #   max: 128
+  # httpOptions:
+  #   static_headers:
+  #     - "Strict-Transport-Security: max-age=3153600"
+  #   idle_timeout: 85
+  delegation:
+    warningTime: "6 months"
+    intervalHard: "6 months"
+    intervalSoft: "3 months"
+    default: "confirm"
+  
+  profile:
+    fields: [] # extra fields for users
+
+  oauth:
+    enabled: true
+    endpointMagic: "liquidfeedback_client_redirection_endpoint"
+    authorizationCodeLifetime: 300
+    # -- refreshTokenLifetime = 60 * 60 * 24 * 30 * 3
+    # -- config.oauth2.refresh_pause: 60
+    # -- config.oauth2.refresh_grace_period: 60
+    # -- config.oauth2.access_token_lifetime: 60 * 60
+    
+
+mail:
+  subjectPrefix: "[LiquidFeedback] "
+  envelopFrom: "liquidfeedback@example.com"
+  from:
+    name: "Support"
+    email: "support@example.com"
+  replyTo:
+    name: "Support"
+    email: "support@example.com"
+
+  # etherpadUrl: "http://etherpad.example.com"
+

@@ -3,11 +3,15 @@
 PIDFILE="/var/run/lf_updated.pid"
 PID=$$
 
-LFUSER="lf"
-DBHOST="localhost"
-DBNAME="liquid_feedback"
-DBUSER="liquid_feedback"
-DBPASS="liquid"
+LFUSER="${LFUSER:-lf}"
+DBHOST="${DBHOST:-localhost}"
+DBNAME="${DBNAME:-liquid_feedback}"
+DBUSER="${DBUSER:-liquid_feedback}"
+DBPASS="${DBPASS:-liquid}"
+
+if [ -e "/config/lf_update" ]; then
+  source /config/lf_update
+fi
 
 if [ -f "${PIDFILE}" ] && kill -CONT $( cat "${PIDFILE}" ); then
   echo "lf_updated is already running."

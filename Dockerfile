@@ -2,9 +2,9 @@
 # Dockerfile for liquid-feedback
 #
 
-FROM debian:bookworm
+FROM debian:bookworm AS build
 
-MAINTAINER Pedro Ângelo <pangelo@void.io>
+LABEL org.opencontainers.image.authors="Daniel Poelzleithenr <poelzleithner@b1-systems.de>"
 
 ENV LF_CORE_VERSION 4.2.2
 ENV LF_FRONTEND_VERSION 4.0.0
@@ -17,6 +17,8 @@ ENV LF_MOONBRIDGE_VERSION 1.1.3
 
 RUN apt-get update && apt-get -y install \
         build-essential \
+        ca-certificates \
+        pkg-config \
         exim4 \
         imagemagick \
         lsb-release \
@@ -24,13 +26,18 @@ RUN apt-get update && apt-get -y install \
         libpq-dev \
         lua5.3 \
         liblua5.3-0 \
+        libldap-dev \
         postgresql \
         postgresql-server-dev-15 \
         pmake \
         libbsd-dev \
         curl \
         discount \
-        sassc
+        sassc \
+        python3 \
+        python3-semver \
+        python3-psycopg2 \
+        procps
 
 #
 # prepare file tree
@@ -39,6 +46,7 @@ RUN apt-get update && apt-get -y install \
 
 RUN mkdir -p /opt/lf/sources/patches \
              /opt/lf/sources/scripts \
+             /opt/lf/core/ \
              /opt/lf/bin
 
 WORKDIR /opt/lf/sources
@@ -47,10 +55,10 @@ WORKDIR /opt/lf/sources
 # Download sources
 #
 
-RUN curl https://www.public-software-group.org/pub/projects/liquid_feedback/backend/v${LF_CORE_VERSION}/liquid_feedback_core-v${LF_CORE_VERSION}.tar.gz | tar -xvzf - \
- && curl https://www.public-software-group.org/pub/projects/liquid_feedback/frontend/v${LF_FRONTEND_VERSION}/liquid_feedback_frontend-v${LF_FRONTEND_VERSION}.tar.gz | tar -xvzf - \
- && curl https://www.public-software-group.org/pub/projects/webmcp/v${LF_WEBMCP_VERSION}/webmcp-v${LF_WEBMCP_VERSION}.tar.gz | tar -xvzf - \
- && curl https://www.public-software-group.org/pub/projects/moonbridge/v${LF_MOONBRIDGE_VERSION}/moonbridge-v${LF_MOONBRIDGE_VERSION}.tar.gz | tar -xvzf -
+RUN curl -k https://www.public-software-group.org/pub/projects/liquid_feedback/backend/v${LF_CORE_VERSION}/liquid_feedback_core-v${LF_CORE_VERSION}.tar.gz | tar -xvzf - \
+ && curl -k https://www.public-software-group.org/pub/projects/liquid_feedback/frontend/v${LF_FRONTEND_VERSION}/liquid_feedback_frontend-v${LF_FRONTEND_VERSION}.tar.gz | tar -xvzf - \
+ && curl -k https://www.public-software-group.org/pub/projects/webmcp/v${LF_WEBMCP_VERSION}/webmcp-v${LF_WEBMCP_VERSION}.tar.gz | tar -xvzf - \
+ && curl -k https://www.public-software-group.org/pub/projects/moonbridge/v${LF_MOONBRIDGE_VERSION}/moonbridge-v${LF_MOONBRIDGE_VERSION}.tar.gz | tar -xvzf -
 
 #
 # Build moonbridge
@@ -69,7 +77,8 @@ RUN cd /opt/lf/sources/moonbridge-v${LF_MOONBRIDGE_VERSION} \
 WORKDIR /opt/lf/sources/liquid_feedback_core-v${LF_CORE_VERSION}
 
 RUN make \
-    && cp lf_update lf_update_issue_order lf_update_suggestion_order /opt/lf/bin
+    && cp lf_update lf_update_issue_order lf_update_suggestion_order /opt/lf/bin \
+    && cp -rp *.sql update /opt/lf/core
 
 #
 # build WebMCP
@@ -85,15 +94,16 @@ WORKDIR /opt/lf/
 
 COPY patches/* /opt/lf/sources/patches
 
-RUN ls -la /opt/lf/sources/patches
-
 RUN cd /opt/lf/sources/liquid_feedback_frontend-v${LF_FRONTEND_VERSION} \
     && cp -R . /opt/lf/frontend \
     && cd /opt/lf/frontend \
     && cat /opt/lf/sources/patches/*.diff | patch -p1 \
     && cd /opt/lf/frontend/fastpath \
     && make \
-    && chown www-data /opt/lf/frontend/tmp
+    && chown www-data /opt/lf/frontend/tmp \
+    && cd /opt/lf/frontend/lib/mldap \
+    && sed -i s#/usr/lib/libldap.so#-lldap# Makefile \
+    && make
 
 #
 # setup db
@@ -101,6 +111,8 @@ RUN cd /opt/lf/sources/liquid_feedback_frontend-v${LF_FRONTEND_VERSION} \
 
 COPY ./scripts/setup_db.sql /opt/lf/sources/scripts/
 COPY ./scripts/config_db.sql /opt/lf/sources/scripts/
+COPY update-core/* /opt/lf/core/
+COPY sql/* /opt/lf/core/
 
 RUN addgroup --system lf \
     && adduser --system --ingroup lf --no-create-home --disabled-password lf \
@@ -114,6 +126,7 @@ RUN addgroup --system lf \
 # cleanup
 #
 
+# FIXMEC: why does this fail ?
 RUN rm -rf /opt/lf/sources \
     && apt-get -y purge \
         build-essential \
@@ -122,7 +135,6 @@ RUN rm -rf /opt/lf/sources \
         postgresql-server-dev-15 \
     && apt-get -y autoremove \
     && apt-get clean
-
 #
 # configure everything
 #
@@ -147,3 +159,10 @@ EXPOSE 8080
 WORKDIR /opt/lf/frontend
 
 ENTRYPOINT ["/opt/lf/bin/start.sh"]
+
+# FOR the kubernetes build, we don't want postgres
+FROM build AS k8s
+
+RUN apt-get -y remove postgresql postgresql-15 \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/postgresql/
